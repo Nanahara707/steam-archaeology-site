@@ -125,10 +125,9 @@ function scorePips(score: number) {
 
         <!-- カードグリッド -->
         <div class="article-grid" id="article-grid">
-          {articles.map((article, i) => {
+          {articles.map((article) => {
             const d = article.data;
             const thumb = getThumb(d.appid);
-            const sClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
             return (
               <a
                 class="card"
@@ -137,13 +136,14 @@ function scorePips(score: number) {
                 data-year={d.releaseYear ?? 0}
                 data-vr={d.hasVr ? '1' : '0'}
                 data-zombie={d.zombie ? '1' : '0'}
+                style="display:none"
               >
                 <div class="card-thumb-wrap">
                   <img
                     class="card-thumb"
                     src={thumb}
                     alt=""
-                    loading={i < 6 ? 'eager' : 'lazy'}
+                    loading="lazy"
                     decoding="async"
                   />
                 </div>
@@ -173,6 +173,9 @@ function scorePips(score: number) {
             );
           })}
         </div>
+
+        <!-- ページネーション -->
+        <div class="pagination" id="pagination"></div>
       </div>
 
       <!-- ホームサイドバー -->
@@ -238,50 +241,129 @@ function scorePips(score: number) {
 </Base>
 
 <script>
-  const grid = document.getElementById('article-grid')!;
-  const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
-  const countEl = document.getElementById('filter-count')!;
+  const PER_PAGE = 10;
+  let currentPage = 1;
+  let filteredCards: HTMLElement[] = [];
 
-  function applyFilters() {
-    const era = (document.getElementById('filter-era') as HTMLSelectElement).value;
+  const grid = document.getElementById('article-grid')!;
+  const allCards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
+  const countEl = document.getElementById('filter-count')!;
+  const pager  = document.getElementById('pagination')!;
+
+  // シャッフル（Fisher-Yates）
+  const shuffled = [...allCards];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  shuffled.forEach(c => grid.appendChild(c));
+
+  function getFiltered(): HTMLElement[] {
+    const era  = (document.getElementById('filter-era')  as HTMLSelectElement).value;
     const kind = (document.getElementById('filter-zombie') as HTMLSelectElement).value;
-    let visible = 0;
-    cards.forEach(card => {
-      let show = true;
+    return shuffled.filter(card => {
       if (era) {
         const year = parseInt(card.dataset.year ?? '0');
-        if (era === '2015' && year > 2015) show = false;
-        else if (era === '2021' && year < 2021) show = false;
-        else if (era !== '2015' && era !== '2021' && year !== parseInt(era)) show = false;
+        if (era === '2015' && year > 2015) return false;
+        if (era === '2021' && year < 2021) return false;
+        if (era !== '2015' && era !== '2021' && year !== parseInt(era)) return false;
       }
-      if (kind === 'zombie' && card.dataset.zombie !== '1') show = false;
-      if (kind === 'vr' && card.dataset.vr !== '1') show = false;
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
+      if (kind === 'zombie' && card.dataset.zombie !== '1') return false;
+      if (kind === 'vr'     && card.dataset.vr     !== '1') return false;
+      return true;
     });
-    countEl.textContent = `${visible}件`;
+  }
+
+  function renderPage() {
+    const start = (currentPage - 1) * PER_PAGE;
+    const end   = start + PER_PAGE;
+    shuffled.forEach((card, i) => {
+      const idx = filteredCards.indexOf(card);
+      card.style.display = (idx >= start && idx < end) ? '' : 'none';
+    });
+    countEl.textContent = `${filteredCards.length}件`;
+    renderPager();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function renderPager() {
+    const total = Math.ceil(filteredCards.length / PER_PAGE);
+    pager.innerHTML = '';
+    if (total <= 1) return;
+
+    // 前ページ
+    if (currentPage > 1) {
+      const btn = document.createElement('button');
+      btn.className = 'page-btn';
+      btn.textContent = '←';
+      btn.addEventListener('click', () => { currentPage--; renderPage(); });
+      pager.appendChild(btn);
+    }
+
+    // ページ番号（最大7つ表示）
+    const range = pageRange(currentPage, total);
+    range.forEach(n => {
+      if (n === -1) {
+        const sp = document.createElement('span');
+        sp.className = 'page-ellipsis';
+        sp.textContent = '…';
+        pager.appendChild(sp);
+        return;
+      }
+      const btn = document.createElement('button');
+      btn.className = 'page-btn' + (n === currentPage ? ' active' : '');
+      btn.textContent = String(n);
+      btn.addEventListener('click', () => { currentPage = n; renderPage(); });
+      pager.appendChild(btn);
+    });
+
+    // 次ページ
+    if (currentPage < total) {
+      const btn = document.createElement('button');
+      btn.className = 'page-btn';
+      btn.textContent = '→';
+      btn.addEventListener('click', () => { currentPage++; renderPage(); });
+      pager.appendChild(btn);
+    }
+  }
+
+  function pageRange(cur: number, total: number): number[] {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: number[] = [1];
+    if (cur > 3) pages.push(-1);
+    for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i);
+    if (cur < total - 2) pages.push(-1);
+    pages.push(total);
+    return pages;
+  }
+
+  function applyFilters() {
+    filteredCards = getFiltered();
+    currentPage = 1;
+    renderPage();
   }
 
   document.getElementById('filter-era')?.addEventListener('change', applyFilters);
   document.getElementById('filter-zombie')?.addEventListener('change', applyFilters);
+
+  // 初期表示
+  applyFilters();
 
   // 発掘統計
   (function() {
     try {
       const ids: number[] = JSON.parse(localStorage.getItem('excavated_v1') ?? '[]');
       if (ids.length === 0) return;
-      const total = cards.length;
-      // ヒーローstat
+      const total = allCards.length;
       const heroStat = document.getElementById('hero-stat-excavated')!;
-      const heroNum = document.getElementById('hero-excavated-num')!;
+      const heroNum  = document.getElementById('hero-excavated-num')!;
       heroStat.style.display = '';
       heroNum.textContent = String(ids.length);
-      // サイドバー
-      const section = document.getElementById('excavation-stats')!;
-      const countEl = document.getElementById('stat-count')!;
-      const bar = document.getElementById('stat-bar') as HTMLElement;
+      const section  = document.getElementById('excavation-stats')!;
+      const statCount = document.getElementById('stat-count')!;
+      const bar      = document.getElementById('stat-bar') as HTMLElement;
       section.style.display = '';
-      countEl.textContent = String(ids.length);
+      statCount.textContent = String(ids.length);
       bar.style.width = `${Math.min(100, Math.round(ids.length / total * 100))}%`;
     } catch {}
   })();
