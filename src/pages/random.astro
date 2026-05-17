@@ -36,11 +36,15 @@ const ids = pool.map(a => a.id);
 
   btn?.addEventListener('click', () => {
     if (!ids || ids.length === 0) return;
+    let excavated = [];
+    try { excavated = JSON.parse(localStorage.getItem('excavated_v1') || '[]'); } catch {}
+    const pool = ids.filter(id => !excavated.includes(Number(id.split('_')[0])));
+    const target = pool.length > 0 ? pool : ids;
     btn.disabled = true;
     btn.textContent = '掘削中...';
     setTimeout(() => {
-      const idx = Math.floor(Math.random() * ids.length);
-      window.location.href = `/excavation/${ids[idx]}`;
+      const idx = Math.floor(Math.random() * target.length);
+      window.location.href = `/excavation/${target[idx]}`;
     }, 400);
   });
 </script>
