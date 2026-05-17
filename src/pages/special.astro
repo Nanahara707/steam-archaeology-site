@@ -1,0 +1,177 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { getThumb } from '../lib/thumb';
+import AdSection from '../components/AdSection.astro';
+
+const allArticles = await getCollection('articles');
+
+// zombie 記事（厳選：anomaly flagsが多いものを優先）
+const zombieArticles = allArticles
+  .filter(a => a.data.zombie)
+  .sort((a, b) => {
+    const fa = (a.data.anomalyFlags ?? []).length;
+    const fb = (b.data.anomalyFlags ?? []).length;
+    if (fb !== fa) return fb - fa;
+    return (b.data.score ?? 0) - (a.data.score ?? 0);
+  });
+
+// anomaly flag が多い注目記事（zombie以外）
+const anomalyArticles = allArticles
+  .filter(a => !a.data.zombie && (a.data.anomalyFlags ?? []).length >= 2)
+  .sort((a, b) => (b.data.anomalyFlags ?? []).length - (a.data.anomalyFlags ?? []).length)
+  .slice(0, 6);
+
+// VR遺跡
+const vrArticles = allArticles
+  .filter(a => a.data.hasVr)
+  .sort((a, b) => (b.data.score ?? 0) - (a.data.score ?? 0))
+  .slice(0, 6);
+
+const statusColor: Record<string, string> = {
+  '稼働': 'status-active',
+  '無人': 'status-empty',
+  '静止': 'status-still',
+  '埋没': 'status-buried',
+};
+
+function cardHtml(article: typeof allArticles[0], i: number) {
+  return article;
+}
+---
+<Base title="特集">
+  <div class="container">
+    <div class="page-hero">
+      <div class="page-hero-label">特集</div>
+      <h1 class="page-hero-title">厳選発掘記録</h1>
+      <p class="page-hero-desc">観測の中でも特に異常な事象が記録されたゲームを特集する。</p>
+    </div>
+
+    {/* ゾンビ開発特集 */}
+    <section class="special-section">
+      <div class="special-section-header">
+        <span class="badge badge-zombie">zombie</span>
+        <h2 class="special-section-title">ゾンビ開発——誰も見ていない場所で更新が続く</h2>
+        <p class="special-section-desc">レビューがほぼない状態で、今もアップデートが確認されているゲームの観測記録。</p>
+      </div>
+      {zombieArticles.length === 0 ? (
+        <p class="empty-note">現在、ゾンビ開発に該当する記録はありません。順次追加予定。</p>
+      ) : (
+        <div class="article-grid">
+          {zombieArticles.map((article, i) => {
+            const d = article.data;
+            const thumb = getThumb(d.appid);
+            const sClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
+            return (
+              <a class="card" href={`/excavation/${article.id}`}>
+                <div class="card-thumb-wrap">
+                  <img class="card-thumb" src={thumb} alt="" loading={i < 3 ? 'eager' : 'lazy'} decoding="async" />
+                </div>
+                <div class="card-body">
+                  <div class="card-eyebrow">
+                    <span class="card-id">#{d.appid}</span>
+                    <span class="badge badge-zombie">zombie</span>
+                  </div>
+                  <div class="card-title">{d.title}</div>
+                  {(d.tags ?? []).length > 0 && (
+                    <div class="card-tags">
+                      {(d.tags ?? []).slice(0, 3).map((tag: string) => (
+                        <span class="card-tag">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div class="card-score-row">
+                    {(d.positive ?? 0) > 0 && (
+                      <span class="card-reviews">レビュー {d.positive}件</span>
+                    )}
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      )}
+    </section>
+
+    {/* 多重異常フラグ特集 */}
+    {anomalyArticles.length > 0 && (
+      <section class="special-section">
+        <div class="special-section-header">
+          <span class="anomaly-tag">⚑ 異常</span>
+          <h2 class="special-section-title">複数の異常が重なる記録</h2>
+          <p class="special-section-desc">説明文の矛盾・タグの不整合・価格と実態の乖離——複数の違和感が同時に観測されたゲーム。</p>
+        </div>
+        <div class="article-grid">
+          {anomalyArticles.map((article, i) => {
+            const d = article.data;
+            const thumb = getThumb(d.appid);
+            const sClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
+            return (
+              <a class="card" href={`/excavation/${article.id}`}>
+                <div class="card-thumb-wrap">
+                  <img class="card-thumb" src={thumb} alt="" loading="lazy" decoding="async" />
+                </div>
+                <div class="card-body">
+                  <div class="card-eyebrow">
+                    <span class="card-id">#{d.appid}</span>
+                  </div>
+                  <div class="card-title">{d.title}</div>
+                  {(d.tags ?? []).length > 0 && (
+                    <div class="card-tags">
+                      {(d.tags ?? []).slice(0, 3).map((tag: string) => (
+                        <span class="card-tag">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    )}
+
+    {/* VR遺跡特集 */}
+    {vrArticles.length > 0 && (
+      <section class="special-section">
+        <div class="special-section-header">
+          <span class="badge badge-vr">VR</span>
+          <h2 class="special-section-title">VR遺跡——VRブームの残骸</h2>
+          <p class="special-section-desc">VR対応として登録され、ほぼ誰にも触れられないまま残っているゲームの記録。</p>
+        </div>
+        <div class="article-grid">
+          {vrArticles.map((article, i) => {
+            const d = article.data;
+            const thumb = getThumb(d.appid);
+            return (
+              <a class="card" href={`/excavation/${article.id}`}>
+                <div class="card-thumb-wrap">
+                  <img class="card-thumb" src={thumb} alt="" loading="lazy" decoding="async" />
+                </div>
+                <div class="card-body">
+                  <div class="card-eyebrow">
+                    <span class="card-id">#{d.appid}</span>
+                  </div>
+                  <div class="card-title">{d.title}</div>
+                  {(d.tags ?? []).length > 0 && (
+                    <div class="card-tags">
+                      {(d.tags ?? []).slice(0, 3).map((tag: string) => (
+                        <span class="card-tag">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div class="card-score-row">
+                    {(d.positive ?? 0) > 0 && (
+                      <span class="card-reviews">レビュー {d.positive}件</span>
+                    )}
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    )}
+    <AdSection />
+  </div>
+</Base>

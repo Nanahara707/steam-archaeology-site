@@ -1,0 +1,82 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { getThumb } from '../lib/thumb';
+import AdSection from '../components/AdSection.astro';
+
+const allArticles = await getCollection('articles');
+
+// Steam墓場: レビュー≤10、状態が無人・静止・埋没
+const articles = allArticles
+  .filter(a => (a.data.positive ?? 0) <= 10 && !a.data.zombie)
+  .sort((a, b) => (a.data.positive ?? 0) - (b.data.positive ?? 0));
+
+---
+<Base title="Steam墓場">
+  <div class="container">
+    <div class="page-hero">
+      <div class="page-hero-label">特集</div>
+      <h1 class="page-hero-title">Steam墓場</h1>
+      <p class="page-hero-desc">レビュー10件以下、更新停止。誰にも届かなかったゲームたちの記録。</p>
+      <div class="hero-stat-row">
+        <div class="hero-stat">
+          <span class="hero-stat-num">{articles.length}</span>
+          <span class="hero-stat-label">件の記録</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-num">{articles.filter(a => (a.data.positive ?? 0) === 0).length}</span>
+          <span class="hero-stat-label">件がレビュー0</span>
+        </div>
+      </div>
+    </div>
+
+    {articles.length === 0 ? (
+      <p class="empty-note">記録なし。</p>
+    ) : (
+      <div class="article-grid">
+        {articles.map((article, i) => {
+          const d = article.data;
+          const thumb = getThumb(d.appid);
+          return (
+            <a
+              class="card"
+              href={`/excavation/${article.id}`}
+            >
+              <div class="card-thumb-wrap">
+                <img
+                  class="card-thumb"
+                  src={thumb}
+                  alt=""
+                  loading={i < 6 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
+              </div>
+              <div class="card-body">
+                <div class="card-eyebrow">
+                  <span class="card-id">#{d.appid}</span>
+                </div>
+                <div class="card-title">{d.title}</div>
+                {(d.tags ?? []).length > 0 && (
+                  <div class="card-tags">
+                    {(d.tags ?? []).slice(0, 3).map((tag: string) => (
+                      <span class="card-tag">{tag}</span>
+                    ))}
+                  </div>
+                )}
+                <div class="card-score-row">
+                  <span class="card-reviews">
+                    {(d.positive ?? 0) === 0 ? 'レビュー 0件' : `レビュー ${d.positive}件`}
+                  </span>
+                </div>
+                {d.lastChecked && (
+                  <div class="card-checked">最終確認: {d.lastChecked}</div>
+                )}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    )}
+    <AdSection />
+  </div>
+</Base>

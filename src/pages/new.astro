@@ -1,0 +1,65 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { getThumb } from '../lib/thumb';
+import AdSection from '../components/AdSection.astro';
+
+const allArticles = await getCollection('articles');
+
+// generated フィールド（ISO形式）降順で新着順に並べる
+const articles = allArticles
+  .filter(a => a.data.generated)
+  .sort((a, b) => {
+    const da = a.data.generated ?? '';
+    const db = b.data.generated ?? '';
+    return db.localeCompare(da);
+  });
+
+---
+<Base title="新規記事">
+  <div class="container">
+    <div class="page-hero">
+      <div class="page-hero-label">新規記事</div>
+      <h1 class="page-hero-title">最近追加された記録</h1>
+      <p class="page-hero-desc">新しく発掘・記録されたストアページの観測記録。</p>
+    </div>
+
+    {articles.length === 0 ? (
+      <p class="empty-note">記録なし。</p>
+    ) : (
+      <div class="new-articles-list">
+        {articles.map((article, i) => {
+          const d = article.data;
+          const thumb = getThumb(d.appid);
+          const genDate = d.generated ? d.generated.slice(0, 10) : '';
+          return (
+            <a class="new-article-row" href={`/excavation/${article.id}`}>
+              <div class="new-article-thumb">
+                <img src={thumb} alt="" loading={i < 6 ? 'eager' : 'lazy'} decoding="async" />
+              </div>
+              <div class="new-article-body">
+                <div class="new-article-meta">
+                  <span class="card-id">#{d.appid}</span>
+                  {d.zombie && <span class="badge badge-zombie">zombie</span>}
+                </div>
+                <div class="new-article-title">{d.title}</div>
+                <div class="new-article-sub">
+                  {d.releaseDate && <span>リリース: {d.releaseDate}</span>}
+                  {(d.positive ?? 0) >= 0 && <span>レビュー {d.positive}件</span>}
+                  {(d.price ?? 0) > 0 && <span>¥{(d.price ?? 0).toLocaleString()}</span>}
+                  {(d.tags ?? []).slice(0, 2).map((tag: string) => (
+                    <span class="card-tag">{tag}</span>
+                  ))}
+                </div>
+              </div>
+              {genDate && (
+                <div class="new-article-date">{genDate}</div>
+              )}
+            </a>
+          );
+        })}
+      </div>
+    )}
+    <AdSection />
+  </div>
+</Base>

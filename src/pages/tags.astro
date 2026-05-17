@@ -1,0 +1,104 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { getThumb } from '../lib/thumb';
+import AdSection from '../components/AdSection.astro';
+
+const allArticles = await getCollection('articles');
+
+// タグ集計
+const tagMap = new Map<string, typeof allArticles>();
+for (const article of allArticles) {
+  for (const tag of (article.data.tags ?? [])) {
+    if (!tagMap.has(tag)) tagMap.set(tag, []);
+    tagMap.get(tag)!.push(article);
+  }
+}
+
+// 件数でソート
+const sortedTags = Array.from(tagMap.entries())
+  .sort((a, b) => b[1].length - a[1].length);
+
+// URLパラメータでフィルタ (SSR無しなのでクライアント側で処理)
+---
+<Base title="タグ探索">
+  <div class="container">
+    <div class="page-hero">
+      <div class="page-hero-label">タグ探索</div>
+      <h1 class="page-hero-title">タグで掘る</h1>
+      <p class="page-hero-desc">Psychological Horror、VR、Atmospheric——タグから深層記録を探索する。</p>
+    </div>
+
+    <div class="tag-cloud">
+      {sortedTags.map(([tag, articles]) => (
+        <button
+          class="tag-cloud-item"
+          data-tag={tag}
+          data-count={articles.length}
+          onclick={`filterByTag(this.dataset.tag)`}
+        >
+          {tag}
+          <span class="tag-cloud-count">{articles.length}</span>
+        </button>
+      ))}
+    </div>
+
+    <div class="filter-bar" style="margin-top: 1.5rem;">
+      <div class="filter-label" id="active-tag-label">// タグを選択してください</div>
+    </div>
+
+    <div class="article-grid" id="tag-grid" style="display: none;">
+    </div>
+
+    <AdSection />
+  </div>
+</Base>
+
+<script define:vars={{ articlesJson: allArticles.map(a => ({
+  id: a.id,
+  title: a.data.title,
+  appid: a.data.appid,
+  tags: a.data.tags ?? [],
+  lastChecked: a.data.lastChecked ?? '',
+  zombie: a.data.zombie ?? false,
+})) }}>
+  var data = articlesJson;
+  var grid = document.getElementById('tag-grid');
+  var label = document.getElementById('active-tag-label');
+
+  function getThumb(appid) {
+    return 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/' + appid + '/header.jpg';
+  }
+
+  function filterByTag(tag) {
+    var filtered = data.filter(function(a) { return a.tags.includes(tag); });
+    label.textContent = '// ' + tag + ' (' + filtered.length + '件)';
+    grid.style.display = '';
+    grid.innerHTML = filtered.map(function(a) {
+      var tagHtml = a.tags.slice(0, 3).map(function(t) {
+        return '<span class="card-tag">' + t + '</span>';
+      }).join('');
+      var zombieHtml = a.zombie ? '<span class="badge badge-zombie">zombie</span>' : '';
+      return '<a class="card" href="/excavation/' + a.id + '">'
+        + '<div class="card-thumb-wrap">'
+        + '<img class="card-thumb" src="' + getThumb(a.appid) + '" alt="" loading="lazy" decoding="async" />'
+        + '</div>'
+        + '<div class="card-body">'
+        + '<div class="card-eyebrow"><span class="card-id">#' + a.appid + '</span>' + zombieHtml + '</div>'
+        + '<div class="card-title">' + a.title + '</div>'
+        + (tagHtml ? '<div class="card-tags">' + tagHtml + '</div>' : '')
+        + (a.lastChecked ? '<div class="card-checked">最終確認: ' + a.lastChecked + '</div>' : '')
+        + '</div>'
+        + '</a>';
+    }).join('');
+
+    document.querySelectorAll('.tag-cloud-item').forEach(function(el) {
+      el.classList.toggle('active', el.dataset.tag === tag);
+    });
+  }
+
+  window.filterByTag = filterByTag;
+
+  var urlTag = new URLSearchParams(window.location.search).get('t');
+  if (urlTag) filterByTag(urlTag);
+</script>

@@ -1,0 +1,67 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { getThumb } from '../lib/thumb';
+import AdSection from '../components/AdSection.astro';
+
+const allArticles = await getCollection('articles');
+const articles = allArticles
+  .filter(a => a.data.zombie)
+  .sort((a, b) => (b.data.score ?? 0) - (a.data.score ?? 0));
+---
+<Base title="ゾンビ開発">
+  <div class="container">
+    <div class="page-hero">
+      <div class="page-hero-label">特集</div>
+      <h1 class="page-hero-title">ゾンビ開発</h1>
+      <p class="page-hero-desc">レビューがほぼない状態で、更新だけが続いているゲームの観測記録。</p>
+    </div>
+
+    {articles.length === 0 ? (
+      <p class="empty-note">記録なし。</p>
+    ) : (
+      <div class="article-grid">
+        {articles.map((article, i) => {
+          const d = article.data;
+          const thumb = getThumb(d.appid);
+          return (
+            <a class="card" href={`/excavation/${article.id}`}>
+              <div class="card-thumb-wrap">
+                <img
+                  class="card-thumb"
+                  src={thumb}
+                  alt=""
+                  loading={i < 4 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
+              </div>
+              <div class="card-body">
+                <div class="card-eyebrow">
+                  <span class="card-id">#{d.appid}</span>
+                  <span class="badge badge-zombie">zombie</span>
+                </div>
+                <div class="card-title">{d.title}</div>
+                {(d.tags ?? []).length > 0 && (
+                  <div class="card-tags">
+                    {(d.tags ?? []).slice(0, 3).map((tag: string) => (
+                      <span class="card-tag">{tag}</span>
+                    ))}
+                  </div>
+                )}
+                <div class="card-score-row">
+                  {(d.positive ?? 0) > 0 && (
+                    <span class="card-reviews">レビュー {d.positive}件</span>
+                  )}
+                </div>
+                {d.lastChecked && (
+                  <div class="card-checked">最終確認: {d.lastChecked}</div>
+                )}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    )}
+    <AdSection />
+  </div>
+</Base>

@@ -1,0 +1,300 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { getThumb } from '../lib/thumb';
+import { amazonProductUrl, amazonKeywordUrl, HOME_GADGETS, STEAM_GIFT_CARDS } from '../lib/amazon';
+
+const allArticles = await getCollection('articles');
+const articles = allArticles.sort((a, b) => (b.data.score ?? 0) - (a.data.score ?? 0));
+
+const featured = articles[0];
+
+const totalCount = articles.length;
+const anomalyCount = articles.filter(a => (a.data.anomalyFlags ?? []).length > 0).length;
+const vrCount = articles.filter(a => a.data.hasVr).length;
+const zombieCount = articles.filter(a => a.data.zombie).length;
+
+const recentArticles = [...allArticles]
+  .filter(a => a.data.generated)
+  .sort((a, b) => (b.data.generated ?? '').localeCompare(a.data.generated ?? ''))
+  .slice(0, 5);
+
+const statusColor: Record<string, string> = {
+  '稼働': 'status-active',
+  '無人': 'status-empty',
+  '静止': 'status-still',
+  '埋没': 'status-buried',
+};
+
+function scorePips(score: number) {
+  const filled = Math.round(score);
+  return '█'.repeat(filled) + '░'.repeat(10 - filled);
+}
+---
+<Base>
+  <!-- ヒーローバンド -->
+  <div class="hero-band" style={`--hero-img: url('${getThumb(featured.data.appid)}')`}>
+    <div class="hero-band-overlay"></div>
+    <div class="container">
+      <div class="hero-inner">
+        <div class="hero-text">
+          <p class="hero-eyebrow">Steam 深層探索アーカイブ</p>
+          <h1 class="hero-title">Steamの底に<br/>眠るものを、<br/>記録する。</h1>
+          <p class="hero-desc">ストアページを一次資料として読む。<br/>普通のゲーム紹介ではない。</p>
+          <div class="hero-stats">
+            <div class="hero-stat-item">
+              <span class="hero-stat-num">{totalCount}</span>
+              <span class="hero-stat-label">観測記録</span>
+            </div>
+            <div class="hero-stat-item">
+              <span class="hero-stat-num">{anomalyCount}</span>
+              <span class="hero-stat-label">異常値</span>
+            </div>
+            <div class="hero-stat-item">
+              <span class="hero-stat-num">{vrCount}</span>
+              <span class="hero-stat-label">VR遺跡</span>
+            </div>
+            {zombieCount > 0 && (
+              <div class="hero-stat-item">
+                <span class="hero-stat-num">{zombieCount}</span>
+                <span class="hero-stat-label">zombie</span>
+              </div>
+            )}
+          </div>
+          <div class="hero-actions">
+            <a href="/random" class="btn-random">⚄ ランダム発掘</a>
+            <a href="/special" class="btn-ghost-hero">特集を見る →</a>
+          </div>
+        </div>
+
+        <!-- 注目記録 -->
+        <a class="hero-featured" href={`/excavation/${featured.id}`}>
+          <div class="hero-featured-thumb-wrap">
+            <img
+              class="hero-featured-thumb"
+              src={getThumb(featured.data.appid)}
+              alt=""
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+          <div class="hero-featured-body">
+            <div class="hero-featured-label">注目の記録</div>
+            <div class="hero-featured-eyebrow">
+              {featured.data.zombie && <span class="badge badge-zombie">zombie</span>}
+              {(featured.data.tags ?? []).slice(0, 2).map((tag: string) => (
+                <span class="card-tag">{tag}</span>
+              ))}
+            </div>
+            <div class="hero-featured-title">{featured.data.title}</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="home-layout">
+
+      <!-- メインカラム -->
+      <div class="home-main">
+        <!-- フィルター -->
+        <div class="toolbar" id="filter-bar">
+          <div class="toolbar-filters">
+            <select id="filter-era" class="filter-select">
+              <option value="">年代: すべて</option>
+              <option value="2015">〜2015年</option>
+              <option value="2016">2016年</option>
+              <option value="2017">2017年</option>
+              <option value="2018">2018年</option>
+              <option value="2019">2019年</option>
+              <option value="2020">2020年</option>
+              <option value="2021">2021年〜</option>
+            </select>
+            <select id="filter-zombie" class="filter-select">
+              <option value="">種別: すべて</option>
+              <option value="zombie">ゾンビ開発</option>
+              <option value="vr">VR遺跡</option>
+            </select>
+          </div>
+          <div class="filter-count" id="filter-count">{totalCount}件</div>
+        </div>
+
+        <!-- カードグリッド -->
+        <div class="article-grid" id="article-grid">
+          {articles.map((article, i) => {
+            const d = article.data;
+            const thumb = getThumb(d.appid);
+            const sClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
+            return (
+              <a
+                class="card"
+                href={`/excavation/${article.id}`}
+                data-status={d.status ?? '埋没'}
+                data-year={d.releaseYear ?? 0}
+                data-vr={d.hasVr ? '1' : '0'}
+                data-zombie={d.zombie ? '1' : '0'}
+              >
+                <div class="card-thumb-wrap">
+                  <img
+                    class="card-thumb"
+                    src={thumb}
+                    alt=""
+                    loading={i < 6 ? 'eager' : 'lazy'}
+                    decoding="async"
+                  />
+                </div>
+                <div class="card-body">
+                  <div class="card-eyebrow">
+                    <span class="card-id">#{d.appid}</span>
+                    {d.zombie && <span class="badge badge-zombie">zombie</span>}
+                  </div>
+                  <div class="card-title">{d.title}</div>
+                  {(d.tags ?? []).length > 0 && (
+                    <div class="card-tags">
+                      {(d.tags ?? []).slice(0, 3).map((tag: string) => (
+                        <span class="card-tag">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div class="card-score-row">
+                    {(d.positive ?? 0) > 0 && (
+                      <span class="card-reviews">レビュー {d.positive}件</span>
+                    )}
+                  </div>
+                  {d.lastChecked && (
+                    <div class="card-checked">最終確認: {d.lastChecked}</div>
+                  )}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+
+      <!-- ホームサイドバー -->
+      <aside class="home-sidebar">
+
+        <!-- 新着記録 -->
+        {recentArticles.length > 0 && (
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">新着記録</div>
+            <ul class="sidebar-link-list">
+              {recentArticles.map(a => (
+                <li>
+                  <a href={`/excavation/${a.id}`}>
+                    {a.data.title}
+                    <div class="sidebar-meta">
+                      {a.data.generated ? a.data.generated.slice(0, 10) : ''}
+                    </div>
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <a class="sidebar-more-link" href="/new">すべての新着を見る →</a>
+          </div>
+        )}
+
+        <!-- 特集へのリンク -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">特集</div>
+          <div class="sidebar-feature-links">
+            <a class="sidebar-feature-btn" href="/special">
+              <span class="badge badge-zombie">zombie</span>
+              ゾンビ開発特集
+            </a>
+            <a class="sidebar-feature-btn" href="/special#vr">
+              <span class="badge badge-vr">VR</span>
+              VR遺跡特集
+            </a>
+            <a class="sidebar-feature-btn" href="/era">
+              <span class="sidebar-feature-icon">⌚</span>
+              年代で発掘する
+            </a>
+          </div>
+        </div>
+
+        <!-- PC周辺機器 PR -->
+        <div class="sidebar-section amzn-section">
+          <div class="sidebar-section-title">
+            PCゲーム環境を整える
+            <span class="pr-label">PR</span>
+          </div>
+          <div class="sidebar-product-list">
+            {HOME_GADGETS.map(g => (
+              <a
+                class="sidebar-product-item"
+                href={amazonProductUrl(g.asin)}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+              >
+                <div class="sidebar-product-img">
+                  <img src={g.img} alt={g.name} loading="lazy" decoding="async" />
+                </div>
+                <div class="sidebar-product-info">
+                  <div class="sidebar-product-cat">{g.category}</div>
+                  <div class="sidebar-product-name">{g.name}</div>
+                  <div class="sidebar-product-price">{g.price}</div>
+                </div>
+              </a>
+            ))}
+          </div>
+          <p class="amzn-note">Amazonアソシエイトとして適格販売により収入を得ています。</p>
+        </div>
+
+        <!-- Steamギフトカード -->
+        <div class="sidebar-section amzn-section">
+          <div class="sidebar-section-title">
+            Steamギフトカード
+            <span class="pr-label">PR</span>
+          </div>
+          <div class="gift-card-list">
+            {STEAM_GIFT_CARDS.map(c => (
+              <a
+                class="gift-card-btn"
+                href={amazonKeywordUrl(c.keyword)}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+              >
+                <span class="gift-card-icon">{c.icon}</span>
+                <span class="gift-card-label">{c.label}</span>
+                <span class="gift-card-arrow">→</span>
+              </a>
+            ))}
+          </div>
+          <p class="amzn-note">Amazonアソシエイトとして適格販売により収入を得ています。</p>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+</Base>
+
+<script>
+  const grid = document.getElementById('article-grid')!;
+  const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
+  const countEl = document.getElementById('filter-count')!;
+
+  function applyFilters() {
+    const era = (document.getElementById('filter-era') as HTMLSelectElement).value;
+    const kind = (document.getElementById('filter-zombie') as HTMLSelectElement).value;
+    let visible = 0;
+    cards.forEach(card => {
+      let show = true;
+      if (era) {
+        const year = parseInt(card.dataset.year ?? '0');
+        if (era === '2015' && year > 2015) show = false;
+        else if (era === '2021' && year < 2021) show = false;
+        else if (era !== '2015' && era !== '2021' && year !== parseInt(era)) show = false;
+      }
+      if (kind === 'zombie' && card.dataset.zombie !== '1') show = false;
+      if (kind === 'vr' && card.dataset.vr !== '1') show = false;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    countEl.textContent = `${visible}件`;
+  }
+
+  document.getElementById('filter-era')?.addEventListener('change', applyFilters);
+  document.getElementById('filter-zombie')?.addEventListener('change', applyFilters);
+</script>

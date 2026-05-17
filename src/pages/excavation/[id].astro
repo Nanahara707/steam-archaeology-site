@@ -1,0 +1,396 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+import { getThumb } from '../../lib/thumb';
+import {
+  amazonSearchUrl, amazonProductUrl, amazonKeywordUrl,
+  VR_PRODUCTS, STEAM_GIFT_CARDS, PC_CONTROLLERS
+} from '../../lib/amazon';
+
+export async function getStaticPaths() {
+  const articles = await getCollection('articles');
+  return articles.map(article => ({
+    params: { id: article.id },
+    props: { article },
+  }));
+}
+
+const { article } = Astro.props;
+const { Content } = await render(article);
+
+const allArticles = await getCollection('articles');
+
+// スコア順（前後ナビ用）
+const sortedAll = [...allArticles].sort((a, b) => (b.data.score ?? 0) - (a.data.score ?? 0));
+const currentIdx = sortedAll.findIndex(a => a.id === article.id);
+const prevArticle = currentIdx > 0 ? sortedAll[currentIdx - 1] : null;
+const nextArticle = currentIdx < sortedAll.length - 1 ? sortedAll[currentIdx + 1] : null;
+
+// タグベースの関連記事
+const d = article.data;
+const tagSet = new Set(d.tags ?? []);
+const relatedArticles = (() => {
+  const byTag = allArticles
+    .filter(a => a.id !== article.id)
+    .map(a => ({
+      a,
+      shared: (a.data.tags ?? []).filter((t: string) => tagSet.has(t)).length,
+    }))
+    .filter(x => x.shared > 0)
+    .sort((x, y) => y.shared - x.shared || (y.a.data.score ?? 0) - (x.a.data.score ?? 0))
+    .map(x => x.a)
+    .slice(0, 4);
+
+  if (byTag.length >= 2) return byTag;
+  return allArticles
+    .filter(a => a.id !== article.id)
+    .sort((a, b) => (b.data.score ?? 0) - (a.data.score ?? 0))
+    .slice(0, 4);
+})();
+
+// 新着（generated 降順）
+const recentArticles = allArticles
+  .filter(a => a.id !== article.id && a.data.generated)
+  .sort((a, b) => (b.data.generated ?? '').localeCompare(a.data.generated ?? ''))
+  .slice(0, 5);
+
+const score = d.score ?? 0;
+const steamUrl = `https://store.steampowered.com/app/${d.appid}/`;
+const amznUrl = amazonSearchUrl(d.title);
+
+const statusColor: Record<string, string> = {
+  '稼働': 'status-active',
+  '無人': 'status-empty',
+  '静止': 'status-still',
+  '埋没': 'status-buried',
+};
+const statusClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
+---
+<Base title={d.title} ogImage={d.headerImage ?? getThumb(d.appid)} description={`${d.title}のSteam観測記録。レビュー${d.positive ?? 0}件、${d.status ?? '埋没'}状態のゲームを深層分析する。`}>
+  <div class="container">
+    <div class="article-page">
+
+      <article class="article-main">
+        <!-- ヘッダー -->
+        <div class="article-log-header">
+          <div class="log-meta-row">
+            <span class="log-label">観測記録</span>
+            <span class="log-id">#{d.appid}</span>
+            {(d.tags ?? []).slice(0, 4).map((tag: string) => (
+              <span class="log-tag">{tag}</span>
+            ))}
+            {d.zombie && <span class="badge badge-zombie">zombie</span>}
+            {d.aiSuspect && <span class="badge badge-ai">AI疑</span>}
+          </div>
+          {d.lastChecked && (
+            <div class="log-checked">最終確認: {d.lastChecked}</div>
+          )}
+        </div>
+
+        <!-- 本文 -->
+        <div class="article-body">
+          <Content />
+        </div>
+
+        <!-- スクリーンショットギャラリー -->
+        {(d.screenshots ?? []).length > 0 && (
+          <div class="screenshot-gallery">
+            {(d.screenshots ?? []).map((url: string, i: number) => (
+              <a class="screenshot-item" href={url} target="_blank" rel="noopener noreferrer">
+                <img src={url} alt={`スクリーンショット ${i + 1}`} loading="lazy" decoding="async" />
+              </a>
+            ))}
+          </div>
+        )}
+
+        <!-- Steam CTA -->
+        <div class="excavation-cta">
+          <div class="excavation-cta-label">記録を読んだなら、実物を確かめてみるか。</div>
+          <a class="excavation-cta-btn" href={steamUrl} target="_blank" rel="noopener noreferrer">
+            Steamで確かめてみる →
+          </a>
+        </div>
+
+        <!-- いいね・シェア -->
+        <div class="reaction-bar">
+          <button class="like-btn" id="like-btn" data-appid={d.appid}>
+            <span class="like-icon">⚑</span>
+            <span class="like-label">この記録に印をつける</span>
+            <span class="like-count" id="like-count">…</span>
+          </button>
+          <a
+            class="share-x-btn"
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(d.title + ' — Steam考古学')}&url=${encodeURIComponent('https://steam-archaeology.vercel.app/excavation/' + d.appid)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="16" height="16">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.26 5.632 5.905-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+            Xでシェア
+          </a>
+        </div>
+
+        <!-- 関連記録 -->
+        {relatedArticles.length > 0 && (
+          <div class="related-section">
+            <div class="related-label">関連記録</div>
+            <div class="related-grid">
+              {relatedArticles.map(a => {
+                const rd = a.data;
+                return (
+                  <a class="related-card" href={`/excavation/${a.id}`}>
+                    <div class="related-card-thumb">
+                      <img src={getThumb(rd.appid)} alt="" loading="lazy" decoding="async" />
+                    </div>
+                    <div class="related-card-body">
+                      <div class="related-card-meta">
+                        {rd.zombie && <span class="badge badge-zombie">zombie</span>}
+                      </div>
+                      <div class="related-card-title">{rd.title}</div>
+                      {(rd.tags ?? []).length > 0 && (
+                        <div class="related-card-tags">
+                          {(rd.tags ?? []).slice(0, 2).map((t: string) => (
+                            <span class="card-tag">{t}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <!-- 前後ナビゲーション -->
+        <nav class="article-pager">
+          {prevArticle ? (
+            <a class="pager-item pager-prev" href={`/excavation/${prevArticle.id}`}>
+              <span class="pager-dir">← 前の記録</span>
+              <span class="pager-title">{prevArticle.data.title}</span>
+            </a>
+          ) : <div />}
+          {nextArticle ? (
+            <a class="pager-item pager-next" href={`/excavation/${nextArticle.id}`}>
+              <span class="pager-dir">次の記録 →</span>
+              <span class="pager-title">{nextArticle.data.title}</span>
+            </a>
+          ) : <div />}
+        </nav>
+
+        <!-- コメント欄 (Giscus) -->
+        <div class="comments-section">
+          <div class="comments-label">コメント</div>
+          <script
+            src="https://giscus.app/client.js"
+            data-repo="YOUR_GITHUB_USERNAME/YOUR_REPO_NAME"
+            data-repo-id="YOUR_REPO_ID"
+            data-category="General"
+            data-category-id="YOUR_CATEGORY_ID"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="top"
+            data-theme="dark"
+            data-lang="ja"
+            crossorigin="anonymous"
+            async
+          ></script>
+        </div>
+
+        <div class="article-back">
+          <a href="/">← 発掘記録一覧</a>
+          {d.zombie && <a href="/special">← 特集</a>}
+        </div>
+      </article>
+
+      <!-- サイドバー -->
+      <aside class="article-sidebar" aria-label="サイドバー">
+
+        <!-- 観測データ -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">観測データ</div>
+          <div class="obs-data-grid">
+            <div class="obs-row">
+              <span class="obs-key">レビュー</span>
+              <span class="obs-val">{d.positive ?? 0}件</span>
+            </div>
+            <div class="obs-row">
+              <span class="obs-key">状態</span>
+              <span class={`obs-val ${statusClass}`}>{d.status ?? '埋没'}</span>
+            </div>
+            {(d.releaseYear ?? 0) > 0 && (
+              <div class="obs-row">
+                <span class="obs-key">リリース年</span>
+                <span class="obs-val">{d.releaseYear}</span>
+              </div>
+            )}
+            {(d.price ?? 0) > 0 && (
+              <div class="obs-row">
+                <span class="obs-key">価格</span>
+                <span class="obs-val">¥{(d.price ?? 0).toLocaleString()}</span>
+              </div>
+            )}
+            {(d.achievementCount ?? 0) > 0 && (
+              <div class="obs-row">
+                <span class="obs-key">実績数</span>
+                <span class="obs-val">{d.achievementCount}</span>
+              </div>
+            )}
+            {d.hasVr && (
+              <div class="obs-row">
+                <span class="obs-key">VR</span>
+                <span class="obs-val obs-vr">{d.isVrOnly ? 'VR専用' : 'VR対応'}</span>
+              </div>
+            )}
+          </div>
+          <a class="steam-link" href={steamUrl} target="_blank" rel="noopener noreferrer">
+            Steamストアページを開く →
+          </a>
+        </div>
+
+        <!-- タグ -->
+        {(d.tags ?? []).length > 0 && (
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">タグ</div>
+            <div class="tag-list">
+              {(d.tags ?? []).slice(0, 8).map((tag: string) => (
+                <a class="tag-chip" href={`/tags?t=${encodeURIComponent(tag)}`}>{tag}</a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <!-- PC周辺機器 PR (コンパクト) -->
+        <div class="sidebar-section amzn-section">
+          <div class="sidebar-section-title">
+            {d.hasVr ? 'VRヘッドセット' : 'PC周辺機器'}
+            <span class="pr-label">PR</span>
+          </div>
+          <div class="sidebar-product-list">
+            {(d.hasVr ? VR_PRODUCTS : PC_CONTROLLERS).slice(0, 2).map(p => (
+              <a
+                class="sidebar-product-item"
+                href={amazonProductUrl(p.asin)}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+              >
+                <div class="sidebar-product-img">
+                  <img src={p.img} alt={p.name} loading="lazy" decoding="async" />
+                </div>
+                <div class="sidebar-product-info">
+                  <div class="sidebar-product-name">{p.name}</div>
+                  <div class="sidebar-product-note">{p.note}</div>
+                  <div class="sidebar-product-price">{p.price}</div>
+                </div>
+              </a>
+            ))}
+          </div>
+          <p class="amzn-note">Amazonアソシエイトとして適格販売により収入を得ています。</p>
+        </div>
+
+        <!-- Steamギフトカード -->
+        <div class="sidebar-section amzn-section">
+          <div class="sidebar-section-title">
+            Steamギフトカード
+            <span class="pr-label">PR</span>
+          </div>
+          <div class="gift-card-list">
+            {STEAM_GIFT_CARDS.map(c => (
+              <a
+                class="gift-card-btn"
+                href={amazonKeywordUrl(c.keyword)}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+              >
+                <span class="gift-card-icon">{c.icon}</span>
+                <span class="gift-card-label">{c.label}</span>
+                <span class="gift-card-arrow">→</span>
+              </a>
+            ))}
+          </div>
+          <p class="amzn-note">Amazonアソシエイトとして適格販売により収入を得ています。</p>
+        </div>
+
+        <!-- Amazonで検索 -->
+        <div class="sidebar-section amzn-section">
+          <div class="sidebar-section-title">
+            Amazonで探す
+            <span class="pr-label">PR</span>
+          </div>
+          <a
+            class="amzn-search-btn"
+            href={amznUrl}
+            target="_blank"
+            rel="nofollow noopener noreferrer"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+            「{d.title.length > 16 ? d.title.slice(0, 16) + '…' : d.title}」を検索
+          </a>
+        </div>
+
+        <!-- 新着記録 -->
+        {recentArticles.length > 0 && (
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">新着記録</div>
+            <ul class="sidebar-link-list">
+              {recentArticles.map(a => (
+                <li>
+                  <a href={`/excavation/${a.id}`}>
+                    {a.data.title}
+                    <div class="sidebar-meta">
+                      {a.data.generated ? a.data.generated.slice(0, 10) : ''}
+                    </div>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+      </aside>
+
+    </div>
+  </div>
+</Base>
+
+<script>
+  const btn = document.getElementById('like-btn') as HTMLButtonElement | null;
+  const countEl = document.getElementById('like-count');
+  if (!btn || !countEl) throw new Error('like elements missing');
+
+  const appid = btn.dataset.appid!;
+  const likedKey = `liked:${appid}`;
+  const countKey = `likes:${appid}`;
+
+  function getCount(): number {
+    return parseInt(localStorage.getItem(countKey) ?? '0', 10);
+  }
+
+  function renderLike() {
+    const liked = localStorage.getItem(likedKey) === '1';
+    const count = getCount();
+    btn!.classList.toggle('liked', liked);
+    countEl!.textContent = count > 0 ? String(count) : '';
+    const label = btn!.querySelector('.like-label')!;
+    label.textContent = liked ? '印をつけた' : 'この記録に印をつける';
+  }
+
+  btn.addEventListener('click', () => {
+    const liked = localStorage.getItem(likedKey) === '1';
+    if (liked) {
+      localStorage.removeItem(likedKey);
+      localStorage.setItem(countKey, String(Math.max(0, getCount() - 1)));
+    } else {
+      localStorage.setItem(likedKey, '1');
+      localStorage.setItem(countKey, String(getCount() + 1));
+    }
+    renderLike();
+  });
+
+  renderLike();
+</script>

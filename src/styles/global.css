@@ -1,0 +1,232 @@
+:root {
+  --bg: #0d0d0d;
+  --surface: #141414;
+  --border: #222;
+  --text: #c8c8c8;
+  --text-dim: #666;
+  --text-bright: #e8e8e8;
+  --accent: #5b9bd5;
+  --zombie: #7a5c8a;
+  --font-mono: 'Courier New', 'Noto Sans Mono', monospace;
+  --font-sans: 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  line-height: 1.8;
+  min-height: 100vh;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+img { max-width: 100%; height: auto; display: block; }
+
+/* ────────────────────────────────────── */
+/* Layout */
+/* ────────────────────────────────────── */
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+  padding: 1.5rem 0;
+}
+
+.site-header-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+}
+
+.site-title {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--text-bright);
+  letter-spacing: 0.05em;
+}
+
+.site-title a { color: inherit; }
+.site-title a:hover { text-decoration: none; opacity: 0.7; }
+
+.site-nav {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  display: flex;
+  gap: 1rem;
+}
+
+.site-nav a { color: var(--text-dim); }
+.site-nav a:hover { color: var(--text); text-decoration: none; }
+
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ────────────────────────────────────── */
+/* Index */
+/* ────────────────────────────────────── */
+
+.index-header {
+  padding: 3rem 0 2rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+
+.index-header h1 {
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  font-weight: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.index-header p {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.article-list {
+  list-style: none;
+}
+
+.article-item {
+  border-bottom: 1px solid var(--border);
+}
+
+.article-item a {
+  display: block;
+  padding: 1.4rem 0;
+  color: var(--text);
+  transition: background 0.1s;
+}
+
+.article-item a:hover {
+  text-decoration: none;
+  color: var(--text-bright);
+}
+
+.article-item-title {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 0.4rem;
+}
+
+.article-item-meta {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.badge-zombie {
+  color: var(--zombie);
+}
+
+/* ────────────────────────────────────── */
+/* Article */
+/* ────────────────────────────────────── */
+
+.article-wrapper {
+  padding: 3rem 0 5rem;
+}
+
+.article-body h1 {
+  font-size: 1.5rem;
+  line-height: 1.4;
+  color: var(--text-bright);
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.article-body > p:first-of-type {
+  color: var(--text);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.score-block {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 1rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin: 1.5rem 0;
+  line-height: 1.7;
+}
+
+.score-block strong {
+  color: var(--text-bright);
+  font-size: 0.9rem;
+}
+
+.article-body h2 {
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
+  padding-top: 2rem;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.article-body p {
+  margin-bottom: 1.2rem;
+  font-size: 0.95rem;
+}
+
+.article-body img {
+  margin: 1.5rem 0;
+  border: 1px solid var(--border);
+}
+
+.article-body a {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.article-body hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.5rem 0;
+}
+
+.article-back {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+}
+
+/* ────────────────────────────────────── */
+/* Footer */
+/* ────────────────────────────────────── */
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 2rem 0;
+  margin-top: 4rem;
+}
+
+.site-footer p {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}

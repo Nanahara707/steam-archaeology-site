@@ -1,0 +1,60 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { getThumb } from '../lib/thumb';
+
+const allArticles = await getCollection('articles');
+const articles = allArticles
+  .filter(a => a.data.aiSuspect || (a.data.anomalyFlags ?? []).some((f: string) => f.includes('AI') || f.includes('機械')))
+  .sort((a, b) => (b.data.score ?? 0) - (a.data.score ?? 0));
+---
+<Base title="AI生成観測">
+  <div class="container">
+    <div class="page-hero">
+      <div class="page-hero-label">深層観測</div>
+      <h1 class="page-hero-title">AI生成観測</h1>
+      <p class="page-hero-desc">AI生成が疑われるタイトル・画像・説明文を持つゲームの観測記録。</p>
+    </div>
+
+    {articles.length === 0 ? (
+      <p class="empty-note">記録なし。</p>
+    ) : (
+      <div class="article-grid">
+        {articles.map((article, i) => {
+          const d = article.data;
+          const thumb = getThumb(d.appid);
+          const score = d.score ?? 0;
+          const filled = Math.round(score);
+          const pips = '█'.repeat(filled) + '░'.repeat(10 - filled);
+          return (
+            <a class="card" href={`/excavation/${article.id}`}>
+              <div class="card-thumb-wrap">
+                <img class="card-thumb" src={thumb} alt="" loading={i < 4 ? 'eager' : 'lazy'} decoding="async" />
+                <div class="card-anomaly-badge">AI</div>
+              </div>
+              <div class="card-body">
+                <div class="card-eyebrow">
+                  <span class="card-id">#{d.appid}</span>
+                  <span class="badge badge-ai">AI疑</span>
+                </div>
+                <div class="card-title">{d.title}</div>
+                <div class="card-score-row">
+                  <span class="score-pip">{pips}</span>
+                  <span class="score-num">{score.toFixed(1)}</span>
+                </div>
+                {d.lastChecked && <div class="card-checked">最終確認: {d.lastChecked}</div>}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    )}
+
+    {articles.length === 0 && (
+      <div style="margin-top: 4rem; text-align: center; color: var(--text-dim);">
+        <p>AIフラグ付きの記録はまだありません。</p>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem;">スコアリング時の anomaly_flags に "AI" を含むものが対象です。</p>
+      </div>
+    )}
+  </div>
+</Base>

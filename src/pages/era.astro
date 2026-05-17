@@ -1,0 +1,84 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { getThumb } from '../lib/thumb';
+import AdSection from '../components/AdSection.astro';
+
+const allArticles = await getCollection('articles');
+
+const eras = [
+  { label: '〜2015年', key: 'pre2016', desc: 'Greenlight時代以前' },
+  { label: '2016年', key: '2016', desc: 'Greenlight末期' },
+  { label: '2017年', key: '2017', desc: 'VRブーム全盛期' },
+  { label: '2018年', key: '2018', desc: 'Direct移行期' },
+  { label: '2019年', key: '2019', desc: 'Steam整理期' },
+  { label: '2020年', key: '2020', desc: 'コロナ禍インディー増加期' },
+  { label: '2021年〜', key: 'post2020', desc: '現代埋没' },
+];
+
+function getEraKey(year: number): string {
+  if (!year || year === 0) return 'unknown';
+  if (year <= 2015) return 'pre2016';
+  if (year >= 2021) return 'post2020';
+  return String(year);
+}
+
+const byEra: Record<string, typeof allArticles> = {};
+for (const era of eras) {
+  byEra[era.key] = allArticles
+    .filter(a => getEraKey(a.data.releaseYear ?? 0) === era.key)
+    .sort((a, b) => (b.data.score ?? 0) - (a.data.score ?? 0));
+}
+---
+<Base title="年代探索">
+  <div class="container">
+    <div class="page-hero">
+      <div class="page-hero-label">年代探索</div>
+      <h1 class="page-hero-title">年代で掘る</h1>
+      <p class="page-hero-desc">Greenlight、VRブーム、Direct移行——時代の痕跡が残るゲームを年代別に観測する。</p>
+    </div>
+
+    {eras.map(era => {
+      const eraArticles = byEra[era.key] ?? [];
+      if (eraArticles.length === 0) return null;
+      return (
+        <section class="era-section">
+          <div class="era-header">
+            <h2 class="era-title">{era.label}</h2>
+            <span class="era-desc">{era.desc}</span>
+            <span class="era-count">{eraArticles.length}件</span>
+          </div>
+          <div class="article-grid article-grid-compact">
+            {eraArticles.slice(0, 6).map((article, i) => {
+              const d = article.data;
+              const thumb = getThumb(d.appid);
+              return (
+                <a class="card card-compact" href={`/excavation/${article.id}`}>
+                  <div class="card-thumb-wrap">
+                    <img class="card-thumb" src={thumb} alt="" loading="lazy" decoding="async" />
+                  </div>
+                  <div class="card-body">
+                    <div class="card-title">{d.title}</div>
+                    {(d.tags ?? []).length > 0 && (
+                      <div class="card-tags">
+                        {(d.tags ?? []).slice(0, 3).map((tag: string) => (
+                          <span class="card-tag">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    <div class="card-score-row">
+                      {(d.positive ?? 0) > 0 && (
+                        <span class="card-reviews">レビュー {d.positive}件</span>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      );
+    })}
+    <AdSection />
+  </div>
+</Base>

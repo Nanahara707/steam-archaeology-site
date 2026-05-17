@@ -1,0 +1,84 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+import { getThumb } from '../../lib/thumb';
+
+export async function getStaticPaths() {
+  const articles = await getCollection('articles');
+  return articles.map(article => ({
+    params: { slug: article.id },
+    props: { article },
+  }));
+}
+
+const { article } = Astro.props;
+const { Content } = await render(article);
+
+const allArticles = await getCollection('articles');
+const sidebarArticles = allArticles
+  .filter(a => a.id !== article.id)
+  .sort((a, b) => (b.data.score ?? 0) - (a.data.score ?? 0))
+  .slice(0, 10);
+
+function scorePips(score: number) {
+  const filled = Math.round(score);
+  return '█'.repeat(filled) + '░'.repeat(10 - filled);
+}
+
+const score = article.data.score ?? 0;
+const steamUrl = `https://store.steampowered.com/app/${article.data.appid}/`;
+---
+<Base title={article.data.title}>
+  <div class="container">
+    <div class="article-page">
+
+      <article class="article-main">
+        <div class="article-eyebrow">
+          {article.data.zombie ? 'ゾンビ開発 — 観測記録' : '観測記録'} · appid {article.data.appid}
+        </div>
+        <div class="article-body">
+          <Content />
+        </div>
+        <div class="article-back">
+          <a href={article.data.zombie ? '/zombie' : '/'}>← 一覧に戻る</a>
+        </div>
+      </article>
+
+      <aside class="article-sidebar" aria-label="サイドバー">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">このゲームの情報</div>
+          <ul class="sidebar-link-list">
+            <li>
+              <a href={steamUrl} target="_blank" rel="noopener noreferrer">
+                Steamストアページ →
+                <div class="sidebar-meta">store.steampowered.com</div>
+              </a>
+            </li>
+          </ul>
+          <div style="padding: 0.75rem 1rem; border-top: 1px solid var(--border-light);">
+            <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); margin-bottom: 0.35rem;">遺跡度スコア</div>
+            <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent);">{scorePips(score)}</div>
+            <div style="font-family: var(--font-mono); font-size: 1rem; color: var(--text-bright); margin-top: 0.2rem; font-weight: 600;">{score.toFixed(1)} <span style="font-size:0.7rem; color: var(--text-dim);">/ 10</span></div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">他の観測記録</div>
+          <ul class="sidebar-link-list">
+            {sidebarArticles.map(a => (
+              <li>
+                <a href={`/articles/${a.id}`}>
+                  {a.data.title}
+                  <div class="sidebar-meta">
+                    {a.data.zombie ? '⬡ zombie · ' : ''}{(a.data.score ?? 0).toFixed(1)}
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</Base>
