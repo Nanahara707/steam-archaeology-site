@@ -216,6 +216,19 @@ function scorePips(score: number) {
 
         {/* アマゾンアフィリエイト登録後に有効化 */}
 
+        <!-- 発掘統計 -->
+        <div class="sidebar-section excavation-stats-section" id="excavation-stats" style="display:none">
+          <div class="sidebar-section-title">あなたの発掘記録</div>
+          <div class="excavation-stat-row">
+            <span class="excavation-stat-num" id="stat-count">0</span>
+            <span class="excavation-stat-label">件 / 全{totalCount}件を発掘</span>
+          </div>
+          <div class="excavation-stat-bar-wrap">
+            <div class="excavation-stat-bar" id="stat-bar" style="width:0%"></div>
+          </div>
+          <a class="excavation-stat-link" href="/new">未発掘の記録を探す →</a>
+        </div>
+
       </aside>
     </div>
   </div>
@@ -248,4 +261,19 @@ function scorePips(score: number) {
 
   document.getElementById('filter-era')?.addEventListener('change', applyFilters);
   document.getElementById('filter-zombie')?.addEventListener('change', applyFilters);
+
+  // 発掘統計
+  (function() {
+    try {
+      const ids: number[] = JSON.parse(localStorage.getItem('excavated_v1') ?? '[]');
+      if (ids.length === 0) return;
+      const section = document.getElementById('excavation-stats')!;
+      const countEl = document.getElementById('stat-count')!;
+      const bar = document.getElementById('stat-bar') as HTMLElement;
+      const total = cards.length;
+      section.style.display = '';
+      countEl.textContent = String(ids.length);
+      bar.style.width = `${Math.min(100, Math.round(ids.length / total * 100))}%`;
+    } catch {}
+  })();
 </script>

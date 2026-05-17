@@ -111,12 +111,11 @@ const statusClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
           </a>
         </div>
 
-        <!-- いいね・シェア -->
+        <!-- 発掘済み・シェア -->
         <div class="reaction-bar">
-          <button class="like-btn" id="like-btn" data-appid={d.appid}>
-            <span class="like-icon">⚑</span>
-            <span class="like-label">この記録に印をつける</span>
-            <span class="like-count" id="like-count">…</span>
+          <button class="excavate-btn" id="excavate-btn" data-appid={d.appid}>
+            <span class="excavate-icon">◆</span>
+            <span class="excavate-label">発掘済みにする</span>
           </button>
           <a
             class="share-x-btn"
@@ -178,32 +177,6 @@ const statusClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
             </a>
           ) : <div />}
         </nav>
-
-        <!-- コメント欄 (Giscus) -->
-        <div class="comments-section">
-          <div class="comments-label">コメント</div>
-          <div class="giscus"></div>
-          <script define:vars={{ giscusRepoId: "R_kgDOSf_wOw", giscusCategoryId: "DIC_kwDOSf_wO84C9P-M" }}>
-            (function() {
-              var s = document.createElement('script');
-              s.src = 'https://giscus.app/client.js';
-              s.dataset.repo = 'Nanahara707/steam-archaeology-site';
-              s.dataset.repoId = giscusRepoId;
-              s.dataset.category = 'General';
-              s.dataset.categoryId = giscusCategoryId;
-              s.dataset.mapping = 'pathname';
-              s.dataset.strict = '0';
-              s.dataset.reactionsEnabled = '1';
-              s.dataset.emitMetadata = '0';
-              s.dataset.inputPosition = 'top';
-              s.dataset.theme = 'dark';
-              s.dataset.lang = 'ja';
-              s.crossOrigin = 'anonymous';
-              s.async = true;
-              document.querySelector('.giscus').appendChild(s);
-            })();
-          </script>
-        </div>
 
         <div class="article-back">
           <a href="/">← 発掘記録一覧</a>
@@ -296,38 +269,35 @@ const statusClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
 </Base>
 
 <script>
-  const btn = document.getElementById('like-btn') as HTMLButtonElement | null;
-  const countEl = document.getElementById('like-count');
-  if (!btn || !countEl) throw new Error('like elements missing');
+  const btn = document.getElementById('excavate-btn') as HTMLButtonElement | null;
+  if (!btn) throw new Error('excavate-btn missing');
 
-  const appid = btn.dataset.appid!;
-  const likedKey = `liked:${appid}`;
-  const countKey = `likes:${appid}`;
+  const appid = Number(btn.dataset.appid);
+  const STORAGE_KEY = 'excavated_v1';
 
-  function getCount(): number {
-    return parseInt(localStorage.getItem(countKey) ?? '0', 10);
+  function getExcavated(): number[] {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'); } catch { return []; }
   }
 
-  function renderLike() {
-    const liked = localStorage.getItem(likedKey) === '1';
-    const count = getCount();
-    btn!.classList.toggle('liked', liked);
-    countEl!.textContent = count > 0 ? String(count) : '';
-    const label = btn!.querySelector('.like-label')!;
-    label.textContent = liked ? '印をつけた' : 'この記録に印をつける';
+  function setExcavated(ids: number[]) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+  }
+
+  function render() {
+    const done = getExcavated().includes(appid);
+    btn!.classList.toggle('excavated', done);
+    btn!.querySelector('.excavate-icon')!.textContent = done ? '◆' : '◇';
+    btn!.querySelector('.excavate-label')!.textContent = done ? '発掘済み' : '発掘済みにする';
   }
 
   btn.addEventListener('click', () => {
-    const liked = localStorage.getItem(likedKey) === '1';
-    if (liked) {
-      localStorage.removeItem(likedKey);
-      localStorage.setItem(countKey, String(Math.max(0, getCount() - 1)));
-    } else {
-      localStorage.setItem(likedKey, '1');
-      localStorage.setItem(countKey, String(getCount() + 1));
-    }
-    renderLike();
+    const ids = getExcavated();
+    const idx = ids.indexOf(appid);
+    if (idx === -1) ids.push(appid);
+    else ids.splice(idx, 1);
+    setExcavated(ids);
+    render();
   });
 
-  renderLike();
+  render();
 </script>
