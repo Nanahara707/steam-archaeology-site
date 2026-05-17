@@ -1,0 +1,35 @@
+name: Daily Article Publish
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 毎日 9:00 JST (UTC 0:00)
+  workflow_dispatch:      # 手動実行も可能
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Move 3 pending articles to content
+        id: move
+        run: |
+          count=0
+          for f in $(ls pending/*.md 2>/dev/null | head -3); do
+            mv "$f" "src/content/articles/$(basename $f)"
+            echo "Published: $(basename $f)"
+            count=$((count + 1))
+          done
+          echo "count=$count" >> $GITHUB_OUTPUT
+
+      - name: Commit and push
+        if: steps.move.outputs.count != '0'
+        run: |
+          git config user.email "bokupiyo2@gmail.com"
+          git config user.name "Nanahara707"
+          git add .
+          git commit -m "daily: publish ${{ steps.move.outputs.count }} articles"
+          git push
