@@ -263,75 +263,7 @@ const statusClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
           </div>
         )}
 
-        <!-- PC周辺機器 PR (コンパクト) -->
-        <div class="sidebar-section amzn-section">
-          <div class="sidebar-section-title">
-            {d.hasVr ? 'VRヘッドセット' : 'PC周辺機器'}
-            <span class="pr-label">PR</span>
-          </div>
-          <div class="sidebar-product-list">
-            {(d.hasVr ? VR_PRODUCTS : PC_CONTROLLERS).slice(0, 2).map(p => (
-              <a
-                class="sidebar-product-item"
-                href={amazonProductUrl(p.asin)}
-                target="_blank"
-                rel="nofollow noopener noreferrer"
-              >
-                <div class="sidebar-product-img">
-                  <img src={p.img} alt={p.name} loading="lazy" decoding="async" />
-                </div>
-                <div class="sidebar-product-info">
-                  <div class="sidebar-product-name">{p.name}</div>
-                  <div class="sidebar-product-note">{p.note}</div>
-                  <div class="sidebar-product-price">{p.price}</div>
-                </div>
-              </a>
-            ))}
-          </div>
-          <p class="amzn-note">Amazonアソシエイトとして適格販売により収入を得ています。</p>
-        </div>
-
-        <!-- Steamギフトカード -->
-        <div class="sidebar-section amzn-section">
-          <div class="sidebar-section-title">
-            Steamギフトカード
-            <span class="pr-label">PR</span>
-          </div>
-          <div class="gift-card-list">
-            {STEAM_GIFT_CARDS.map(c => (
-              <a
-                class="gift-card-btn"
-                href={amazonKeywordUrl(c.keyword)}
-                target="_blank"
-                rel="nofollow noopener noreferrer"
-              >
-                <span class="gift-card-icon">{c.icon}</span>
-                <span class="gift-card-label">{c.label}</span>
-                <span class="gift-card-arrow">→</span>
-              </a>
-            ))}
-          </div>
-          <p class="amzn-note">Amazonアソシエイトとして適格販売により収入を得ています。</p>
-        </div>
-
-        <!-- Amazonで検索 -->
-        <div class="sidebar-section amzn-section">
-          <div class="sidebar-section-title">
-            Amazonで探す
-            <span class="pr-label">PR</span>
-          </div>
-          <a
-            class="amzn-search-btn"
-            href={amznUrl}
-            target="_blank"
-            rel="nofollow noopener noreferrer"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
-            「{d.title.length > 16 ? d.title.slice(0, 16) + '…' : d.title}」を検索
-          </a>
-        </div>
+        {/* アマゾンアフィリエイト登録後に有効化 */}
 
         <!-- 新着記録 -->
         {recentArticles.length > 0 && (
