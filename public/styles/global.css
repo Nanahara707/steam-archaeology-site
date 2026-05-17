@@ -2407,3 +2407,18 @@ html[data-theme="light"] .icon-moon { display: none; }
   font-size: 0.82rem;
   padding: 0 0.2rem;
 }
+
+.footer-social {
+  margin-top: 1.25rem;
+}
+
+.footer-x-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  transition: color var(--transition);
+}
+
+.footer-x-link:hover { color: var(--text); }
