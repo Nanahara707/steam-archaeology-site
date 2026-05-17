@@ -70,6 +70,25 @@ const statusClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
   <div class="container">
     <div class="article-page">
 
+      <!-- 左スティッキーアクションバー -->
+      <div class="article-action-bar">
+        <button class="action-excavate-btn" id="excavate-btn" data-appid={d.appid}>
+          <span class="action-excavate-icon">◇</span>
+          <span class="action-excavate-label">発掘する</span>
+        </button>
+        <a
+          class="action-share-btn"
+          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(d.title + ' — Steam考古学')}&url=${encodeURIComponent('https://steam-archaeology.vercel.app/excavation/' + d.appid)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="14" height="14">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.26 5.632 5.905-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          <span class="action-share-label">シェア</span>
+        </a>
+      </div>
+
       <article class="article-main">
         <!-- ヘッダー -->
         <div class="article-log-header">
@@ -108,25 +127,6 @@ const statusClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
           <div class="excavation-cta-label">記録を読んだなら、実物を確かめてみるか。</div>
           <a class="excavation-cta-btn" href={steamUrl} target="_blank" rel="noopener noreferrer">
             Steamで確かめてみる →
-          </a>
-        </div>
-
-        <!-- 発掘済み・シェア -->
-        <div class="reaction-bar">
-          <button class="excavate-btn" id="excavate-btn" data-appid={d.appid}>
-            <span class="excavate-icon">◆</span>
-            <span class="excavate-label">発掘済みにする</span>
-          </button>
-          <a
-            class="share-x-btn"
-            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(d.title + ' — Steam考古学')}&url=${encodeURIComponent('https://steam-archaeology.vercel.app/excavation/' + d.appid)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="16" height="16">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.26 5.632 5.905-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-            </svg>
-            Xでシェア
           </a>
         </div>
 
@@ -286,8 +286,8 @@ const statusClass = statusColor[d.status ?? '埋没'] ?? 'status-buried';
   function render() {
     const done = getExcavated().includes(appid);
     btn!.classList.toggle('excavated', done);
-    btn!.querySelector('.excavate-icon')!.textContent = done ? '◆' : '◇';
-    btn!.querySelector('.excavate-label')!.textContent = done ? '発掘済み' : '発掘済みにする';
+    btn!.querySelector('.action-excavate-icon')!.textContent = done ? '◆' : '◇';
+    btn!.querySelector('.action-excavate-label')!.textContent = done ? '発掘済み' : '発掘する';
   }
 
   btn.addEventListener('click', () => {

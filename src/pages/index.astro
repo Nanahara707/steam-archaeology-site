@@ -40,7 +40,6 @@ function scorePips(score: number) {
         <div class="hero-text">
           <p class="hero-eyebrow">Steam 深層探索アーカイブ</p>
           <h1 class="hero-title">Steamの底に<br/>眠るものを、<br/>記録する。</h1>
-          <p class="hero-desc">ストアページを一次資料として読む。<br/>普通のゲーム紹介ではない。</p>
           <div class="hero-stats">
             <div class="hero-stat-item">
               <span class="hero-stat-num">{totalCount}</span>
@@ -60,6 +59,10 @@ function scorePips(score: number) {
                 <span class="hero-stat-label">zombie</span>
               </div>
             )}
+            <div class="hero-stat-item hero-stat-excavated" id="hero-stat-excavated" style="display:none">
+              <span class="hero-stat-num hero-stat-excavated-num" id="hero-excavated-num">0</span>
+              <span class="hero-stat-label">あなたの発掘</span>
+            </div>
           </div>
           <div class="hero-actions">
             <a href="/random" class="btn-random">⚄ ランダム発掘</a>
@@ -267,10 +270,16 @@ function scorePips(score: number) {
     try {
       const ids: number[] = JSON.parse(localStorage.getItem('excavated_v1') ?? '[]');
       if (ids.length === 0) return;
+      const total = cards.length;
+      // ヒーローstat
+      const heroStat = document.getElementById('hero-stat-excavated')!;
+      const heroNum = document.getElementById('hero-excavated-num')!;
+      heroStat.style.display = '';
+      heroNum.textContent = String(ids.length);
+      // サイドバー
       const section = document.getElementById('excavation-stats')!;
       const countEl = document.getElementById('stat-count')!;
       const bar = document.getElementById('stat-bar') as HTMLElement;
-      const total = cards.length;
       section.style.display = '';
       countEl.textContent = String(ids.length);
       bar.style.width = `${Math.min(100, Math.round(ids.length / total * 100))}%`;
