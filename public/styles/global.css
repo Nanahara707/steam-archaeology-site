@@ -139,7 +139,7 @@ img { display: block; max-width: 100%; }
 .site-nav a {
   font-size: 0.77rem;
   font-weight: 500;
-  color: var(--text-dim);
+  color: var(--text);
   padding: 0.3rem 0.75rem;
   border-radius: var(--radius);
   transition: color var(--transition), background var(--transition);
@@ -306,11 +306,13 @@ html[data-theme="light"] .icon-moon { display: none; }
 
 .hero-eyebrow {
   font-family: var(--font-mono);
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--accent);
-  opacity: 0.9;
+  font-weight: 600;
+  border-left: 2px solid var(--accent);
+  padding-left: 0.75rem;
   margin-bottom: 1.25rem;
 }
 
@@ -753,16 +755,16 @@ html[data-theme="light"] .icon-moon { display: none; }
 .card-tag {
   font-family: var(--font-mono);
   font-size: 0.58rem;
-  color: var(--text-dim);
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-bright);
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
   border-radius: 3px;
   padding: 1px 6px;
 }
 .card-reviews {
   font-family: var(--font-mono);
   font-size: 0.6rem;
-  color: var(--text-dim);
+  color: var(--text);
   margin-left: auto;
 }
 
@@ -1332,7 +1334,7 @@ html[data-theme="light"] .icon-moon { display: none; }
   font-size: 0.6rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  color: var(--text-dim);
+  color: var(--text);
   padding: 2px 6px;
   border-radius: 2px;
   transition: all var(--transition);
@@ -1539,7 +1541,7 @@ html[data-theme="light"] .icon-moon { display: none; }
 .tag-cloud-item {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  color: var(--text-dim);
+  color: var(--text);
   font-family: var(--font-mono);
   font-size: 0.7rem;
   padding: 0.3rem 0.7rem;
@@ -2382,7 +2384,7 @@ html[data-theme="light"] .icon-moon { display: none; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  color: var(--text-muted);
+  color: var(--text);
   font-family: var(--font-mono);
   font-size: 0.82rem;
   cursor: pointer;
@@ -2403,7 +2405,7 @@ html[data-theme="light"] .icon-moon { display: none; }
 }
 
 .page-ellipsis {
-  color: var(--text-dim);
+  color: var(--text);
   font-size: 0.82rem;
   padding: 0 0.2rem;
 }
