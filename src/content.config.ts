@@ -27,4 +27,14 @@ const articles = defineCollection({
   }),
 });
 
-export const collections = { articles };
+const specials = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/specials' }),
+  schema: z.object({
+    title: z.string(),
+    theme: z.string().optional().default(''),
+    featuredAppids: z.array(z.number()).optional().default([]),
+    generated: z.string().optional().default(''),
+  }),
+});
+
+export const collections = { articles, specials };

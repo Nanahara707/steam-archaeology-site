@@ -1,0 +1,106 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const specials = await getCollection('specials');
+  return specials.map(sf => ({
+    params: { id: sf.id },
+    props: { sf },
+  }));
+}
+
+const { sf } = Astro.props;
+const { Content } = await render(sf);
+const d = sf.data;
+---
+<Base
+  title={d.title}
+  description={`Steam考古学 特集：${d.theme || d.title}`}
+>
+  <div class="container">
+    <article class="special-article">
+      <header class="special-article-header">
+        <div class="special-article-eyebrow">
+          <span class="badge badge-feature">特集</span>
+          {d.theme && <span class="feature-theme">{d.theme}</span>}
+        </div>
+        {d.featuredAppids && d.featuredAppids.length > 0 && (
+          <div class="special-article-thumbs">
+            {d.featuredAppids.map((id: number) => (
+              <img
+                class="special-article-thumb"
+                src={`https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${id}/header.jpg`}
+                alt=""
+                loading="eager"
+                decoding="async"
+              />
+            ))}
+          </div>
+        )}
+      </header>
+
+      <div class="article-body special-article-body">
+        <Content />
+      </div>
+
+      <footer class="special-article-footer">
+        <a href="/special" class="back-link">← 特集一覧へ戻る</a>
+      </footer>
+    </article>
+  </div>
+</Base>
+
+<style>
+.special-article {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+}
+
+.special-article-header {
+  margin-bottom: 2rem;
+}
+
+.special-article-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.special-article-thumbs {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.special-article-thumb {
+  width: 200px;
+  height: 94px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.special-article-body {
+  margin-top: 2rem;
+}
+
+.special-article-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.back-link {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--text);
+}
+</style>
