@@ -314,6 +314,23 @@ html[data-theme="light"] .icon-moon { display: none; }
   border-left: 2px solid var(--accent);
   padding-left: 0.75rem;
   margin-bottom: 1.25rem;
+  position: relative;
+  display: inline-block;
+  text-shadow: 0 0 18px rgba(74,135,204,0.7), 0 0 40px rgba(74,135,204,0.35);
+}
+
+.hero-eyebrow::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120%;
+  height: 260%;
+  background: radial-gradient(ellipse at center, rgba(74,135,204,0.18) 0%, transparent 70%);
+  filter: blur(14px);
+  z-index: -1;
+  pointer-events: none;
 }
 
 .hero-title {
